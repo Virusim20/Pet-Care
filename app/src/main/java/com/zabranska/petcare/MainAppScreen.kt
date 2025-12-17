@@ -14,7 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 
-// Sealed Class для навігації
+// Клас для елементів меню
 sealed class BottomNavItem(val title: String, val icon: ImageVector) {
     object Search : BottomNavItem("Search", Icons.Default.Search)
     object Appointments : BottomNavItem("Appointments", Icons.Default.DateRange)
@@ -24,6 +24,7 @@ sealed class BottomNavItem(val title: String, val icon: ImageVector) {
 
 @Composable
 fun MainAppScreen() {
+    // Список вкладок
     val items = listOf(
         BottomNavItem.Search,
         BottomNavItem.Appointments,
@@ -31,6 +32,7 @@ fun MainAppScreen() {
         BottomNavItem.Profile
     )
 
+    // Стан: яка вкладка обрана зараз
     var selectedItem by remember { mutableStateOf<BottomNavItem>(BottomNavItem.Search) }
 
     Scaffold(
@@ -43,31 +45,32 @@ fun MainAppScreen() {
                         selected = selectedItem == item,
                         onClick = { selectedItem = item },
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = Color(0xFF3F51B5),
+                            selectedIconColor = Color(0xFF3F51B5), // Синій колір активної іконки
                             selectedTextColor = Color(0xFF3F51B5),
-                            indicatorColor = Color(0xFFE8EAF6)
+                            indicatorColor = Color(0xFFE8EAF6)     // Світлий фон під активною іконкою
                         )
                     )
                 }
             }
         }
     ) { innerPadding ->
+        // Контейнер, який змінює вміст залежно від обраної вкладки
         Box(
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
         ) {
             when (selectedItem) {
-                BottomNavItem.Search -> SearchScreen()     // Екран з сіткою (ЛР4/ЛР5)
+                BottomNavItem.Search -> SearchScreen()     // Наш новий екран пошуку
                 BottomNavItem.Appointments -> PlaceholderScreen("Appointments")
                 BottomNavItem.Explore -> PlaceholderScreen("Explore")
-                BottomNavItem.Profile -> ProfileScreen()   // Екран профілю (ЛР4/ЛР5)
+                BottomNavItem.Profile -> ProfileScreen()   // Наш новий екран профілю
             }
         }
     }
 }
 
-// Проста заглушка для екранів, які ще не намальовані
+// Проста заглушка для екранів, які ще не готові
 @Composable
 fun PlaceholderScreen(text: String) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
