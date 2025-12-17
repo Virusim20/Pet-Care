@@ -1,36 +1,44 @@
-package com.zabranska.petcare // Твій пакет
+package com.zabranska.petcare // Залиш свій пакет
 
 import android.content.Context
 
 class UserManager(context: Context) {
     private val prefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
 
-    // Зберігаємо дані (Реєстрація)
+    // --- Реєстрація та Вхід ---
     fun registerUser(fullName: String, email: String, pass: String) {
         prefs.edit().apply {
             putString("FULL_NAME", fullName)
             putString("EMAIL", email)
             putString("PASSWORD", pass)
-            putBoolean("IS_LOGGED_IN", true) // Одразу логінимо
+            putBoolean("IS_LOGGED_IN", true)
             apply()
         }
     }
 
-    // Перевірка логіну (Вхід)
     fun loginUser(email: String, pass: String): Boolean {
         val savedEmail = prefs.getString("EMAIL", "")
         val savedPass = prefs.getString("PASSWORD", "")
-
         return email == savedEmail && pass == savedPass
     }
 
-    // Чи користувач вже авторизований?
     fun isUserLoggedIn(): Boolean {
         return prefs.getBoolean("IS_LOGGED_IN", false)
     }
 
-    // Вихід (для тестів, якщо знадобиться)
     fun logout() {
         prefs.edit().putBoolean("IS_LOGGED_IN", false).apply()
+    }
+
+    // --- Онбордінг (Нові методи) ---
+
+    // Зберігаємо, що користувач пройшов навчання
+    fun saveOnboardingFinished() {
+        prefs.edit().putBoolean("IS_ONBOARDING_FINISHED", true).apply()
+    }
+
+    // Перевіряємо, чи треба показувати навчання
+    fun isOnboardingFinished(): Boolean {
+        return prefs.getBoolean("IS_ONBOARDING_FINISHED", false)
     }
 }

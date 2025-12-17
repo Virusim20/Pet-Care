@@ -1,4 +1,4 @@
-package com.zabranska.petcare // Перевір пакет!
+package com.zabranska.petcare // Залиш свій пакет
 
 import android.os.Bundle
 import android.widget.Toast
@@ -11,10 +11,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 
-// Enum для навігації (найпростіший варіант)
+// Всі можливі стани екранів
 enum class ScreenState {
-    Splash, Welcome, Login, Register, MainApp
+    Splash, Onboarding, Welcome, Login, Register, MainApp
 }
 
 class MainActivity : ComponentActivity() {
@@ -22,48 +25,70 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Ініціалізуємо менеджер даних
         val userManager = UserManager(this)
 
         setContent {
-            // Зберігаємо поточний стан екрану
             var currentScreen by remember { mutableStateOf(ScreenState.Splash) }
 
-            // Логіка перемикання екранів
             when (currentScreen) {
+                // --- 1. SPLASH SCREEN ---
                 ScreenState.Splash -> {
                     WelcomeScreen(onTimeout = {
-                        // Якщо користувач вже залогінений -> одразу в додаток
+                        // ЛОГІКА ПЕРЕХОДІВ (маршрутизація)
                         if (userManager.isUserLoggedIn()) {
+                            // Якщо вже залогінений -> в головний додаток
                             currentScreen = ScreenState.MainApp
+                        } else if (!userManager.isOnboardingFinished()) {
+                            // Якщо НЕ бачив онбордінг -> показуємо його
+                            currentScreen = ScreenState.Onboarding
                         } else {
+                            // Якщо бачив онбордінг, але не залогінений -> екран входу
                             currentScreen = ScreenState.Welcome
                         }
                     })
                 }
+
+                // --- 2. ONBOARDING (Лабораторна 3) ---
+                ScreenState.Onboarding -> {
+                    OnboardingScreen(
+                        onFinished = {
+                            // Натиснули "Get Started": запам'ятовуємо і йдемо на Welcome
+                            userManager.saveOnboardingFinished()
+                            currentScreen = ScreenState.Welcome
+                        },
+                        onSignInClick = {
+                            // Натиснули "Sign In" зверху: пропускаємо і йдемо на Login
+                            userManager.saveOnboardingFinished()
+                            currentScreen = ScreenState.Login
+                        }
+                    )
+                }
+
+                // --- 3. WELCOME (Вибір Login/Register) ---
                 ScreenState.Welcome -> {
                     WelcomeAuthScreen(
                         onNavigateToLogin = { currentScreen = ScreenState.Login },
                         onNavigateToRegister = { currentScreen = ScreenState.Register }
                     )
                 }
+
+                // --- 4. REGISTER ---
                 ScreenState.Register -> {
                     RegistrationScreen(
                         onBack = { currentScreen = ScreenState.Welcome },
                         onRegisterSuccess = { name, email, pass ->
-                            // Зберігаємо в SharedPrefs
                             userManager.registerUser(name, email, pass)
                             currentScreen = ScreenState.MainApp
                         }
                     )
                 }
+
+                // --- 5. LOGIN ---
                 ScreenState.Login -> {
                     LoginScreen(
                         onBack = { currentScreen = ScreenState.Welcome },
                         onLoginAttempt = { email, pass ->
-                            // Перевіряємо дані
                             if (userManager.loginUser(email, pass)) {
-                                // Успіх -> зберігаємо статус і йдемо далі
                                 userManager.registerUser("User", email, pass) // Оновлюємо сесію
                                 currentScreen = ScreenState.MainApp
                             } else {
@@ -72,10 +97,17 @@ class MainActivity : ComponentActivity() {
                         }
                     )
                 }
+
+                // --- 6. MAIN APP (Головний екран) ---
                 ScreenState.MainApp -> {
-                    // Твій головний екран
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("MAIN APP SCREEN \nUser Authorized!")
+                        Text(
+                            text = "Hello!\nWelcome to Pet Care.",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF3F51B5),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
                     }
                 }
             }
