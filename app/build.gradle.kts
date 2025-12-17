@@ -50,7 +50,8 @@ android {
 }
 
 dependencies {
-
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2") // Для ViewModel
+    implementation("androidx.compose.material:material-icons-extended:1.6.0") // Для гарних іконок
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)

@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 // Всі можливі стани екранів
 enum class ScreenState {
@@ -25,46 +26,46 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val userManager = UserManager(this)
+        val userManager = UserManager(this) // Створюємо тут, щоб передати у фабрику
 
         setContent {
             var currentScreen by remember { mutableStateOf(ScreenState.Splash) }
 
             when (currentScreen) {
-                // --- 1. SPLASH SCREEN ---
+                // --- 1. SPLASH З VIEWMODEL ---
                 ScreenState.Splash -> {
-                    WelcomeScreen(onTimeout = {
-                        // ЛОГІКА ПЕРЕХОДІВ (маршрутизація)
-                        if (userManager.isUserLoggedIn()) {
-                            // Якщо вже залогінений -> в головний додаток
-                            currentScreen = ScreenState.MainApp
-                        } else if (!userManager.isOnboardingFinished()) {
-                            // Якщо НЕ бачив онбордінг -> показуємо його
-                            currentScreen = ScreenState.Onboarding
-                        } else {
-                            // Якщо бачив онбордінг, але не залогінений -> екран входу
-                            currentScreen = ScreenState.Welcome
+                    // Ініціалізуємо ViewModel за допомогою фабрики
+                    val splashViewModel: SplashViewModel = viewModel(
+                        factory = SplashViewModelFactory(userManager)
+                    )
+
+                    // Спостерігаємо за рішенням ViewModel
+                    val destination by splashViewModel.destination.collectAsState()
+
+                    // Відображаємо сам екран Splash (картинку)
+                    WelcomeScreen(onTimeout = {}) // onTimeout тепер пустий, бо логіка у ViewModel
+
+                    // Як тільки destination зміниться (перестане бути null) - переходимо
+                    LaunchedEffect(destination) {
+                        destination?.let {
+                            currentScreen = it
                         }
-                    })
+                    }
                 }
 
-                // --- 2. ONBOARDING (Лабораторна 3) ---
                 ScreenState.Onboarding -> {
                     OnboardingScreen(
                         onFinished = {
-                            // Натиснули "Get Started": запам'ятовуємо і йдемо на Welcome
                             userManager.saveOnboardingFinished()
                             currentScreen = ScreenState.Welcome
                         },
                         onSignInClick = {
-                            // Натиснули "Sign In" зверху: пропускаємо і йдемо на Login
                             userManager.saveOnboardingFinished()
                             currentScreen = ScreenState.Login
                         }
                     )
                 }
 
-                // --- 3. WELCOME (Вибір Login/Register) ---
                 ScreenState.Welcome -> {
                     WelcomeAuthScreen(
                         onNavigateToLogin = { currentScreen = ScreenState.Login },
@@ -72,7 +73,6 @@ class MainActivity : ComponentActivity() {
                     )
                 }
 
-                // --- 4. REGISTER ---
                 ScreenState.Register -> {
                     RegistrationScreen(
                         onBack = { currentScreen = ScreenState.Welcome },
@@ -83,32 +83,23 @@ class MainActivity : ComponentActivity() {
                     )
                 }
 
-                // --- 5. LOGIN ---
                 ScreenState.Login -> {
                     LoginScreen(
                         onBack = { currentScreen = ScreenState.Welcome },
                         onLoginAttempt = { email, pass ->
                             if (userManager.loginUser(email, pass)) {
-                                userManager.registerUser("User", email, pass) // Оновлюємо сесію
+                                userManager.registerUser("User", email, pass)
                                 currentScreen = ScreenState.MainApp
                             } else {
-                                Toast.makeText(applicationContext, "Email or password incorrect", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(applicationContext, "Error", Toast.LENGTH_SHORT).show()
                             }
                         }
                     )
                 }
 
-                // --- 6. MAIN APP (Головний екран) ---
+                // --- 2. ГОЛОВНИЙ ЕКРАН (ОНОВЛЕНО) ---
                 ScreenState.MainApp -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(
-                            text = "Hello!\nWelcome to Pet Care.",
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF3F51B5),
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
-                    }
+                    MainAppScreen() // Викликаємо наш новий екран з навігацією
                 }
             }
         }
